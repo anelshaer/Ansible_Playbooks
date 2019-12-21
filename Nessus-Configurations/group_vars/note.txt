@@ -1,0 +1,13 @@
+#To create a vault for Username and Password
+#Use the following command
+#Then add username and password variables
+
+ansible-vault create group_vars/scanners
+
+#To Edit the vault you can use following command
+
+ansible-vault edit group_vars/scanners
+# Sample Variables used inside vault
+
+nessus_username: <username>
+nessus_password: <password>
