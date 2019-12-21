@@ -1,0 +1,52 @@
+---
+- hosts: local
+  connection: local
+  tags: admin-accounts
+  tasks:
+  - name: create local account
+    expect:
+      echo: yes
+      command: "bash -c 'ssh wizard@{{hostvars[item].ansible_host}};/bin/true'" #very bad, bypass the error we get from the user creation script
+      responses:
+        (.*)connecting(.*): "yes"
+        (.*)password(.*): "admin"
+        (.*)static address(.*): "n"
+        (.*)administrator(.*): "y"
+        (.*)Username(.*): '{{nessus_username}}'
+        (.*)Password(.*): '{{nessus_password}}'
+        (.*)Confirm(.*): '{{nessus_password}}'
+    with_items: "{{ groups['scanners'] }}"   
+    tags: local-admin-account
+  - name: create web account
+    expect:
+      echo: yes
+      command: "ssh {{nessus_username}}@{{hostvars[item].ansible_host}} -t 'sudo /opt/nessus/sbin/nessuscli adduser {{nessus_username}}'"
+      responses:
+          (.*)connecting(.*): "yes"
+          (.*)password(.*): '{{nessus_password}}'
+          (.*)sudo(.*): '{{nessus_password}}'
+          (.*)Login(.*): '{{nessus_password}}'
+          (.*)again(.*): '{{nessus_password}}'
+          (.*)administrator(.*): "y"
+          (.*)rules(.*): ''
+          (.*)ok(.*): "y"
+    with_items: "{{ groups['scanners'] }}" 
+    tags: web-admin-account
+
+- hosts: scanners
+  tags: after-admin-creation
+  tasks:
+  - name: change hostname
+    hostname:
+      name: '{{inventory_hostname}}.company.com'
+      use: redhat
+    tags: set-hostname
+  - name: fetch securitycenter
+    shell: '/opt/nessus/sbin/nessuscli fetch --security-center && /sbin/service nessusd restart'
+    tags: fetch-securitycenter
+  - name: be sure nessusd is running and enabled
+    service:
+      name: nessusd
+      state: started
+      enabled: yes
+    tags: check-nessus-service
