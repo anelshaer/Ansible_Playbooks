@@ -1,0 +1,12 @@
+[scanners]
+Nessus1 ansible_host=172.28.128.5
+Nessus2 ansible_host=172.28.128.8 
+[local]
+localhost ansible_connection=local
+[scanners:vars]
+ansible_become=yes 
+ansible_become_user=root 
+ansible_become_method=sudo
+ansible_user='{{nessus_username}}' 
+ansible_password='{{nessus_password}}' 
+ansible_become_password='{{nessus_password}}' 
